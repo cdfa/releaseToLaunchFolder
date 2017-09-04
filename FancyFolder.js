@@ -1,6 +1,7 @@
 LL.bindClass("android.widget.Toast");
 
-alert(tag)
+var logScript=LL.getScriptByName('logScript');if(logScript){try{return eval('(function(){'+logScript.getText()+'})()');}catch(e){if(e.message!="Custom view not found!"&&e.message!="Custom view not loaded!"){alert(e);}function log(){}}}else{function log(){}}/*logScriptEnd*/
+
 var script = LL.getCurrentScript();
 var scriptId = script.getId();
 var e = LL.getEvent();
@@ -87,7 +88,7 @@ function openClose(){
     var dRight = maxRight-contX-contWidth
     var dTop = maxTop-contY
     var dBottom = maxBottom-contY-contHeight
-    //alert("maxLeft:"+maxLeft+", dLeft:"+dLeft+", maxRight:"+maxRight+", dRight:"+dRight+", maxTop:"+maxTop+", dTop:"+dTop+", maxBottom:"+maxBottom+", dBottom:"+dBottom)
+    //log("maxLeft:"+maxLeft+", dLeft:"+dLeft+", maxRight:"+maxRight+", dRight:"+dRight+", maxTop:"+maxTop+", dTop:"+dTop+", maxBottom:"+maxBottom+", dBottom:"+dBottom)
     
     var contScaleX = contWidth/(dRight-dLeft+contWidth)
     var contScaleY = contHeight/(dBottom-dTop+contHeight)
@@ -174,25 +175,25 @@ function getDistance(x1, y1, x2, y2){
   return Math.sqrt(Math.pow(x1-x2, 2)+Math.pow(y1-y2, 2))
 }
 
-alert(tag)
 if(tag==null){
   item.getProperties().edit().setEventHandler("i.longTap", EventHandler.RUN_SCRIPT, scriptId).commit()
   openCircle()
 }else if(tag=="rootItem"){
-    if(src=="MENU_ITEM"){
-      openCircle()
-    }else{
-      openClose()
-    }
+  if(src=="MENU_ITEM"){
+    openCircle()
+  }else{
+    openClose()
+  }
 }else if(tag=="Adding Items"){
     item.setTag("FF", "rootItem")
     var items = cont.getItems()
     for(i=0; i<items.length; i++){
       var newItem=items.getAt(i)
-      var center = getCenter(newItem)
-      var newX = center.x
-      var newY = center.y
-      if(getDistance(rootCenterX, rootCenterY, newX, newY)<item.getWidth()/2 && newItem!=item){
+      if(newItem.isVisible()){
+        var center = getCenter(newItem)
+        var newX = center.x
+        var newY = center.y
+        if(getDistance(rootCenterX, rootCenterY, newX, newY)<item.getWidth()/2 && newItem!=item){
           var newId = newItem.getId()
           var linked = false
           for(j=0; j<linkedItems.length; j++){
@@ -204,10 +205,15 @@ if(tag==null){
           if(linked){
             removeItem(newId, j)
           }else{
-            newItem.setTag("FF", rootId)
             linkedItems.push(newItem.getId())
           }
+        }
       }
+    }
+    if(linkedItems.length==0){
+      var defaultEvHa = cont.getProperties().getEventHandler("i.longTap")
+      item.getProperties().edit().setEventHandler("i.longTap", defaultEvHa.getAction(), defaultEvHa.getData()).commit()
+      item.setTag("FF", null)
     }
     item.setBoxBackground(null,"n",true)
     
