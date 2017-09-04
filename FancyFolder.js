@@ -109,7 +109,7 @@ function openCircle(){
   Android.makeNewToast("put items in circle and run script again to add or delete", true).show()
 }
 
-function removeItem(index, linkedItems){
+function removeItem(index){
   try{
     cont.removeItem(cont.getItemByName(linkedItems[index]+" connector"))
   }catch(err2){
@@ -149,10 +149,10 @@ function openClose(){
   }
 
   if(isClosed){
-    var maxRight=rootCenterX
-    var maxLeft=rootCenterX
-    var maxTop=rootCenterY
-    var maxBottom=rootCenterY
+    var maxRight=rootX+rootBoxWidth
+    var maxLeft=rootX
+    var maxTop=rootY
+    var maxBottom=rootY+rootBoxHeight
   }
   
   for(i=0; i<linkedItems.length; i++){
@@ -164,39 +164,17 @@ function openClose(){
       if(err != 'TypeError: Cannot call method "setVisibility" of null'){
         alert(err+" on "+linkedItems[i]+"i: "+i)
       }else{
-        removeItem(i, linkedItems)
+        removeItem(i)
         item.setTag("linkedItems", JSON.stringify(linkedItems))
         i=i-1
       }
     }
     
     if(child!=null){
-      connector = null
-      label = null
-      try{
-        connector = cont.getItemByName(linkedItems[i]+" connector")
-        connector.setVisibility(isClosed)
-      }catch(err){
-      }
-      try{
-        label = cont.getItemByName(linkedItems[i] + " label")
-        label.setVisibility(isClosed)
-        if(label.getLabel()!=child.getLabel()){
-          updateLabelText(child, label)
-        }
-      }catch(err){
-      }
-
       var childX = child.getPositionX()
       var childY = child.getPositionY()
-      var center=getCenter(child)
-      var childCenterX = center.x
-      var childCenterY = center.y
       var childBoxWidth = getBoxWidth(child)
       var childBoxHeight = getBoxHeight(child)
-      var childScaleX = child.getScaleX()
-      var childScaleY = child.getScaleY()
-      var childRot = child.getRotation()
 
       openItems = getArrayTag(script, "openItems")
       if(isClosed){
@@ -215,7 +193,106 @@ function openClose(){
         openItems.splice(openItems.indexOf(rootId), 1)
       }
       script.setTag("openItems", JSON.stringify(openItems))
+    }
+  }
+  
+  var closeInfo;
+  var contX = cont.getPositionX()
+  var contY = cont.getPositionY()
+  var oldContScale = cont.getPositionScale()
+  if(isClosed){
+    var contWidth = cont.getWidth()
+    var contHeight = cont.getHeight()
 
+    var dLeft = maxLeft-contX
+    var dRight = maxRight-contX-contWidth
+    var dTop = maxTop-contY
+    var dBottom = maxBottom-contY-contHeight
+    //alert("maxLeft:"+maxLeft+", dLeft:"+dLeft+", maxRight:"+maxRight+", dRight:"+dRight+", maxTop:"+maxTop+", dTop:"+dTop+", maxBottom:"+maxBottom+", dBottom:"+dBottom)
+    
+    var contScaleX = contWidth/(dRight-dLeft+contWidth)
+    var contScaleY = contHeight/(dBottom-dTop+contHeight)
+    
+    var newContScale = contScaleX<contScaleY? contScaleX : contScaleY
+    if(newContScale>oldContScale) newContScale=oldContScale
+
+    dx=0
+    dy=0
+
+    if(dLeft<0){
+      dx=dLeft
+    }else if(dRight>0){
+      dx=dRight
+    }
+
+    if(dTop<0){
+      dy=dTop
+    }else if(dBottom>0){
+      dy=dBottom
+    }
+
+    if(dx!=0 || dy!=0){
+      cont.setPosition(contX+dx,contY+dy,newContScale,true)
+    }
+    
+    var bgWidth = maxRight-maxLeft
+    alert(maxRight)
+    var bgHeight = maxBottom-maxTop
+    var bgItem = cont.addShortcut("", new Intent(), maxLeft, maxTop) 
+    bgItem.setName(rootId+"bg")
+    //bgItem.setSize(bgWidth, bgHeight)
+    cont.setItemZIndex(bgItem.getId, 0)
+    var ed = bgItem.getProperties().edit();
+    ed.setBoolean("s.iconVisibility", false);
+    ed.setBoolean("s.labelVisibility", false);
+    //ed.setEventHandler("i.touch", EventHandler.RUN_SCRIPT, script_touch.getId());
+    ed.commit();
+    
+    var bg = LL.createImage(bgWidth, bgHeight);
+    bg.draw().drawARGB(100, 255, 255, 255);
+    bgItem.setBoxBackground(bg, "n");
+    
+    closeInfo = {x:contX, y:contY, sc:oldContScale, bgId:bgItem.getId()}
+    item.setTag("closeInfo", JSON.stringify(closeInfo))
+  }else{
+    closeInfo = JSON.parse(item.getTag("closeInfo"))
+    if(closeInfo==null){
+      closeInfo = {x:contX, y:contY, sc:oldContScale}
+    }
+    cont.setPosition(closeInfo.x, closeInfo.y, closeInfo.sc, true)
+    try{
+      cont.removeItem(cont.getItemById(closeInfo.bgId))
+    }catch(e){   
+    }
+  }
+
+  for(i=0; i<linkedItems.length; i++){
+      child = cont.getItemById(linkedItems[i])
+      var center=getCenter(child)
+      var childCenterX = center.x
+      var childCenterY = center.y
+      var childBoxWidth = getBoxWidth(child)
+      var childBoxHeight = getBoxHeight(child)
+      var childScaleX = child.getScaleX()
+      var childScaleY = child.getScaleY()
+      var childRot = child.getRotation()
+      
+      connector = null
+      label = null
+      try{
+        connector = cont.getItemByName(linkedItems[i]+" connector")
+        connector.setVisibility(isClosed)
+      }catch(err){
+      }
+      try{
+        label = cont.getItemByName(linkedItems[i] + " label")
+        label.setVisibility(isClosed)
+        if(label.getLabel()!=child.getLabel()){
+          updateLabelText(child, label)
+        }
+      }catch(err){
+      }
+      
       if((hasChanged(child) && connector != null) || updateAll){
         if(label!=null) updateLabelPos(child, childCenterY, label)
 
@@ -247,54 +324,6 @@ function openClose(){
         }
       connector.setPosition(rx-dx/2-getBoxWidth(connector)/2, ry-dy/2-getBoxHeight(connector)/2)
       }
-    }
-  }
-  var contProp;
-  var contX = cont.getPositionX()
-  var contY = cont.getPositionY()
-  var oldContScale = cont.getPositionScale()
-  if(isClosed){
-    var contWidth = cont.getWidth()
-    var contHeight = cont.getHeight()
-    contProp = {x:contX, y:contY, sc:oldContScale}
-    item.setTag("contProp", JSON.stringify(contProp))
-
-    var dLeft = maxLeft-contX
-    var dRight = maxRight-contX-contWidth
-    var dTop = maxTop-contY
-    var dBottom = maxBottom-contY-contHeight
-    //alert("maxLeft:"+maxLeft+", dLeft:"+dLeft+", maxRight:"+maxRight+", dRight:"+dRight+", maxTop:"+maxTop+", dTop:"+dTop+", maxBottom:"+maxBottom+", dBottom:"+dBottom)
-    
-    var contScaleX = contWidth/(dRight-dLeft+contWidth)
-    var contScaleY = contHeight/(dBottom-dTop+contHeight)
-    
-    var newContScale = contScaleX<contScaleY? contScaleX : contScaleY
-    if(newContScale>oldContScale) newContScale=oldContScale
-
-    dx=0
-    dy=0
-
-    if(dLeft<0){
-      dx=dLeft
-    }else if(dRight>0){
-      dx=dRight
-    }
-
-    if(dTop<0){
-      dy=maxTop
-    }else if(dBottom>0){
-      dy=dBottom
-    }
-
-    if(dx!=0 || dy!=0){
-      cont.setPosition(contX+dx,contY+dy,newContScale,true)
-    }
-  }else{
-    contProp = JSON.parse(item.getTag("contProp"))
-    if(contProp==null){
-      contProp = {x:contX, y:contY, sc:oldContScale}
-    }
-    cont.setPosition(contProp.x, contProp.y, contProp.sc,true)
   }
   item.setTag("isClosed",!isClosed)
 }
@@ -389,7 +418,7 @@ if(src=="RUN_SCRIPT"){
       var newY=center.y
       if(getDistance(rootCenterX, rootCenterY, newX, newY)<item.getWidth()/2 && newItem!=item){
         var name = newItem.getName()
-        if(name==null || !(name.slice(-5) != "label" && name.slice(-9) != "connector")){
+        if(name!=null && name.slice(-5) != "label" && name.slice(-9) != "connector"){
           var newId = newItem.getId()
           var linked = false
           for(j=0; j<linkedItems.length; j++){
@@ -400,7 +429,7 @@ if(src=="RUN_SCRIPT"){
             }
           }
           if(linked){
-            removeItem(linkedItems.indexOf(newId), linkedItems)
+            removeItem(linkedItems.indexOf(newId))
           }else{
             addLabel(newItem, newY)
             newItem.setTag("FF3 rootItem", rootId)
