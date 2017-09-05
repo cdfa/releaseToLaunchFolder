@@ -13,6 +13,7 @@ return (function(){
   }catch(e){alert("At line " + e.lineNumber + ": " + e);}
   /*logScriptEnd*/
 
+  // noinspection JSCheckFunctionSignatures
   var script = getCurrentScript()
     , scriptId = script.getId()
     , screen = getActiveScreen()
@@ -34,7 +35,7 @@ return (function(){
 
     if(root){
       //this.add(root)
-      root.setTag("myFolderId", this.getId())
+      root.setTag("myFolderId", this.getId());
       this.rootId = root.getId();
       var edit = root.getProperties().edit();
       edit.setEventHandler("i.touch", EventHandler.RUN_SCRIPT, scriptId);
@@ -47,13 +48,13 @@ return (function(){
 
   FancyFolder.getIdFromRoot = function(root){
     var id = root.getTag("myFolderId");
-    if(id === null) throw new Error(root + "is not a rootItem!")
+    if(id === null) throw new Error(root + "is not a rootItem!");
     return id;
-  }
+  };
 
   FancyFolder.isRoot = function(it){
     return it.getTag("myFolderId") !== null;
-  }
+  };
 
   FancyFolder.prototype = ItemCollection.prototype;
   FancyFolder.prototype.constructor = FancyFolder;
@@ -71,7 +72,7 @@ return (function(){
 
   FancyFolder.prototype.close = function(){
     this.makeUnPersistent();
-    for(i = 1; i < getCount(); i++){
+    for(var i = 1; i < getCount(); i++){
       var it = this.getAt(i);
       if(it){
         child.setVisibility(false)
@@ -81,22 +82,22 @@ return (function(){
     }
 
     if(this.ocd)
-      c.setPosition(ocd.x, ocd.y, ocd.sc, true)
+      c.setPosition(ocd.x, ocd.y, ocd.sc, true);
 
     this.isOpen = false;
 
     /*this.onCloseListeners.forEach(function(f){
      f();
      })*/
-  }
+  };
 
   FancyFolder.prototype.getRoot = function(){
     return this.getAt(0);
-  }
+  };
 
   FancyFolder.prototype.interactWith = function(it){
     //the same it?
-    if((this.itIds && it.getId() == this.itIds[0]) || (this.getAt(0).getId() == it.getId())){
+    if((this.itIds && it.getId() === this.itIds[0]) || (this.getAt(0).getId() === it.getId())){
       return false;
     }else{
       if(this.contains(it)){
@@ -106,7 +107,7 @@ return (function(){
       }
       return true;
     }
-  }
+  };
 
   FancyFolder.prototype.onLongClick = function(){
     if(this.isOpen && this.closeOnLongHover){
@@ -114,7 +115,7 @@ return (function(){
     }else{
       this.open();
     }
-  }
+  };
 
   FancyFolder.prototype.onMove = function(){
     var p = {
@@ -137,30 +138,30 @@ return (function(){
         /*var thisFolder = this;
          this.longClickTimeout = setTimeout(function(){
          clearTimeout(thisFolder.longClickTimeout);
-         handleOverridenEventHandler(nearestIt.getProperties.getEventHandler("i.longTap"), function(){
+         handleOverriddenEventHandler(nearestIt.getProperties.getEventHandler("i.longTap"), function(){
          Saveable.getObject("FancyFolder", FancyFolder.getIdFromRoot(nearestIt)).onLongClick();
          })
          },1000)*/
       }
     }
-  }
+  };
 
   FancyFolder.prototype.onRelease = function(){
     this.close();
     setTimeout(function(){
       if(this.prevNearestIt){
         deselectIt(prevNearestIt);
-        handleOverridenEventHandler(this.prevNearestIt.getProperties().getEventHandler("i.tap"));
+        handleOverriddenEventHandler(this.prevNearestIt.getProperties().getEventHandler("i.tap"));
       }
     }, 0);
-  }
+  };
 
   FancyFolder.prototype.open = function(){
     //this.subFolders = [];
     this.makePersistent();
-    var c = this.getParent()
+    var c = this.getParent();
 
-    for(i = 1; i < getCount(); i++){
+    for(var i = 1; i < getCount(); i++){
       var it = this.getAt(i);
       if(it){
         child.setVisibility(true)
@@ -205,7 +206,7 @@ return (function(){
       dy = dBottom;
     }
 
-    if(dx != 0 || dy != 0){
+    if(dx !== 0 || dy !== 0){
       c.setPosition(ocd.x + dx, ocd.y + dy, newContScale > ocd.sc ? newContScale : ocd.sc, true);
     }
 
@@ -215,14 +216,14 @@ return (function(){
     /*this.onOpenListeners.forEach(function(f){
      f();
      })*/
-  }
+  };
 
-  function handleOverridenEventHandler(evHa, thisScriptFunction){
+  function handleOverriddenEventHandler(evHa, thisScriptFunction){
     var evHaAction = evHa.getAction()
       , evHaData = evHa.getData();
 
-    if(evHaAction == EventHandler.RUN_SCRIPT){
-      if(evHaData == scriptId){
+    if(evHaAction === EventHandler.RUN_SCRIPT){
+      if(evHaData === scriptId){
         if(thisScriptFunction) thisScriptFunction();
       }else{
         //runScript(evHa.getData()) //TODO
@@ -236,20 +237,21 @@ return (function(){
     var firstIt = getSelectedIt()
       , secondIt = it;
 
-    if(it.getId() == getSelectedIt().getId()){
+    if(it.getId() === getSelectedIt().getId()){
       deselectIt(it)
     }else{
       var firstItIsRoot = FancyFolder.isRoot(firstIt)
-        , secondItIsRoot = FancyFolder.isRoot(secondIt);
+        , secondItIsRoot = FancyFolder.isRoot(secondIt)
+        , folder;
 
       if(!firstItIsRoot && !secondItIsRoot){
-        var folder = new FancyFolder(firstIt)
+        folder = new FancyFolder(firstIt);
         folder.add(secondIt, true)
       }else if(firstItIsRoot && !secondItIsRoot){
-        var folder = Saveable.getObject("FancyFolder", FancyFolder.getIdFromRoot(firstIt))
+        folder = Saveable.getObject("FancyFolder", FancyFolder.getIdFromRoot(firstIt));
         folder.interactWith(secondIt, false);
       }else if(!firstItIsRoot && secondItIsRoot){
-        var folder = Saveable.getObject("FancyFolder", FancyFolder.getIdFromRoot(secondItIt))
+        folder = Saveable.getObject("FancyFolder", FancyFolder.getIdFromRoot(secondItIt));
         folder.interactWith(firstIt, false);
         deselectIt(firstIt)
       }
@@ -266,11 +268,13 @@ return (function(){
     }
   }
 
+  var touchEvent;
   try{
-    var x = event.getX()
-    var touchEvent = true;
+    // noinspection JSUnusedLocalSymbols
+    var x = event.getX();
+    touchEvent = true;
   }catch(err){
-    var touchEvent = false;
+    touchEvent = false;
   }
   if(touchEvent){
     var scrollThreshold = 30;
@@ -281,14 +285,14 @@ return (function(){
         thisScript.downY = event.getY();
         thisScript.downTime = new Date().getTime();
         thisScript.t = setTimeout(function(){
-          handleOverridenEventHandler(item.getProperties().getEventHandler("i.longTap"), function(){
+          handleOverriddenEventHandler(item.getProperties().getEventHandler("i.longTap"), function(){
             //long tap
             thisScript.open = true;
             var folder = Saveable.getObject("FancyFolder", FancyFolder.getIdFromRoot(item));
             thisScript.originFolderId = folder.getId();
             folder.onLongClick();
           });
-        }, 1000)
+        }, 1000);
         break;
       case MotionEvent.ACTION_CANCEL:
       case MotionEvent.ACTION_UP:
@@ -305,25 +309,25 @@ return (function(){
             , absDy = Math.abs(dy)
             , evHa = item.getProperties().getEventHandler("i.tap");
           if(dTime < 1000 && absDx < scrollThreshold && absDy < scrollThreshold){
-            log("click")
-            handleOverridenEventHandler(evHa, onClick);
+            log("click");
+            handleOverriddenEventHandler(evHa, onClick);
           }else if(absDx > 3 * scrollThreshold || absDy > 3 * scrollThreshold){
             if(absDx > 2 * absDy){
               if(dx > 0){
-                log("swipeLeft")
-                handleOverridenEventHandler(evHa);
+                log("swipeLeft");
+                handleOverriddenEventHandler(evHa);
               }else{
-                log("swipeRight")
-                handleOverridenEventHandler(evHa);
+                log("swipeRight");
+                handleOverriddenEventHandler(evHa);
               }
             }else if(absDy > 2 * absDx){
               if(dy > 0){
-                log("swipeUp")
+                log("swipeUp");
                 // TODO: open item menu
-                handleOverridenEventHandler(evHa);
+                handleOverriddenEventHandler(evHa);
               }else{
-                log("swipeDown")
-                handleOverridenEventHandler(evHa);
+                log("swipeDown");
+                handleOverriddenEventHandler(evHa);
               }
             }
           }
@@ -347,23 +351,25 @@ return (function(){
         break;
     }
   }else{
+    // noinspection JSCheckFunctionSignatures
     var e = getEvent()
       , it = e.getItem();
     if(it){
-      var src = e.getSource()
+      var src = e.getSource();
 
-      if(src == "MENU_ITEM"){
-        var firstIt = e.getItem()
-        var c = firstIt.getParent()
+      if(src === "MENU_ITEM"){
+        // noinspection JSCheckFunctionSignatures
+        var firstIt = e.getItem();
+        var c = firstIt.getParent();
         selectIt(firstIt);
         setEventHandlerRestorably(c, "i.tap", EventHandler.RUN_SCRIPT, scriptId);
         script.setTag("cId", c.getId());
         setEventHandlerRestorably(screen.getCurrentDesktop(), "backKey", EventHandler.RUN_SCRIPT, scriptId);
-      }else if(src == "I_CLICK"){
+      }else if(src === "I_CLICK"){
         onClick()
       }
     }else{
-      //backkey
+      //back key
       restoreEventHandler(screen.getContainerById(script.getTag("cId")), "i.tap");
       restoreEventHandler(screen.getCurrentDesktop(), "backKey");
       deselectIt();
