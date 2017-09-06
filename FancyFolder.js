@@ -1,48 +1,53 @@
+// SEE BELOW FOR CONFIG1!
+
 //noinspection JSAnnotator
 return (function(){
-  var scrollThreshold = 30;
+  // CONFIG
+  var scrollThreshold = 30
+    // if the script should automatically change the item menu event of a folder item
+    , newOpenItemMenuEvent = true
+    // what event should open the item menu if the above is enabled (see: http://www.lightninglauncher.com/scripting/reference/api/reference/net/pierrox/lightning_launcher/script/api/PropertySet.html > Item properties > Event handlers
+    , openItemMenuEvent = 'i.swipeUp';
+
+  // @formatter:off
+  function log(){}try{// noinspection JSAnnotator
+    return (function(){var logScript = getScriptByName('logScript');if(logScript){eval('function run(){' + logScript.getText() + '}');return run();}})();}catch(e){alert("At line " + e.lineNumber + ": " + e);}/*logScriptEnd*/
+  // @formatter:on
 
   bindClass("android.widget.Toast");
 
-  function log(){}
-
-  try{// noinspection JSAnnotator
-    return (function(){
-      var logScript = getScriptByName('logScript');
-      if(logScript){
-        eval('function run(){' + logScript.getText() + '}');
-        return run();
-      }
-    })();
-  }catch(e){alert("At line " + e.lineNumber + ": " + e);}
-  /*logScriptEnd*/
+  eval(getScriptByName('geometryHelpers').getText());
+  eval(getScriptByName('selectHelpers').getText());
+  eval(getScriptByName('eventHandlerHelpers').getText());
 
   // noinspection JSCheckFunctionSignatures
   var script = getCurrentScript()
     , scriptId = script.getId()
     , screen = getActiveScreen()
     , context = screen.getContext()
-    , thisScript = self;
+    , thisScript = self
+    , FFTagName = "FancyFolder";
 
-  eval(getScriptByName('geometryHelpers').getText());
-  eval(getScriptByName('selectHelpers').getText());
-  eval(getScriptByName('eventHandlerHelpers').getText());
-
-  function toast(msg){
-    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
+  function toast(msg, length){
+    Toast.makeText(context, msg, length || Toast.LENGTH_SHORT).show();
   }
 
   function FancyFolder(root){
-    Saveable.call(this, root, 'FancyFolder');
+    Saveable.call(this, root, FFTagName);
 
     if(root){
-      var edit = root.getProperties().edit();
-      prependEventHandler("i.touch", new EventHandler(EventHandler.RUN_SCRIPT, scriptId), edit);
-      prependEventHandler("i.longTap", new EventHandler(EventHandler.RUN_SCRIPT, scriptId), edit);
-      prependEventHandler('i.swipeUp', new EventHandler(EventHandler.ITEM_MENU));
-      edit.commit();
+      if(root.getTag(FFTagName) === null){
+        var edit = root.getProperties().edit();
+        prependEventHandler("i.touch", new EventHandler(EventHandler.RUN_SCRIPT, scriptId), edit);
+        prependEventHandler("i.longTap", new EventHandler(EventHandler.RUN_SCRIPT, scriptId), edit);
+        if(newOpenItemMenuEvent)
+          prependEventHandler(openItemMenuEvent, new EventHandler(EventHandler.ITEM_MENU));
+        edit.commit();
 
-      //TODO create container
+        //TODO create container
+      }else if(prompt('This item is already a folder item. Do you want to uninstall?')){
+        // TODO uninstallation
+      }
     }
   }
 
