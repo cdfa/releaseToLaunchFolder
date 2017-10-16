@@ -1,3 +1,4 @@
+// TODO: revive root item after load
 // SEE BELOW FOR CONFIG1!
 
 //noinspection JSAnnotator
@@ -32,21 +33,28 @@ return (function(){
     Toast.makeText(context, msg, length || Toast.LENGTH_SHORT).show();
   }
 
+  function sourceIsOnTouch(){
+    try{
+      event.getX()
+    }catch(e){
+      return false;
+    }
+    return true;
+  }
+
   function FancyFolder(root){
     Saveable.call(this, root, FFTagName);
 
     if(root){
+      this.root = root;
       if(root.getTag(FFTagName) === null){
         var edit = root.getProperties().edit();
-        prependEventHandler("i.touch", new EventHandler(EventHandler.RUN_SCRIPT, scriptId), edit);
         prependEventHandler("i.longTap", new EventHandler(EventHandler.RUN_SCRIPT, scriptId), edit);
-        if(newOpenItemMenuEvent)
-          prependEventHandler(openItemMenuEvent, new EventHandler(EventHandler.ITEM_MENU));
+        /*if(newOpenItemMenuEvent)
+          prependEventHandler(openItemMenuEvent, new EventHandler(EventHandler.ITEM_MENU));*/
         edit.commit();
 
-        var parent = root.getParent();
-        var center =
-        parent.addPanel()
+        //TODO create container
       }else if(prompt('This item is already a folder item. Do you want to uninstall?')){
         // TODO uninstallation
       }
@@ -74,7 +82,7 @@ return (function(){
      })*/
   };
 
-  FancyFolder.prototype.onLongClick = function(){
+  FancyFolder.prototype.toggleOpen = function(){
     this.isOpen ? this.close() : this.open();
   };
 
@@ -97,7 +105,7 @@ return (function(){
          this.longClickTimeout = setTimeout(function(){
          clearTimeout(thisFolder.longClickTimeout);
          handleOverriddenEventHandler(nearestIt.getProperties.getEventHandler("i.longTap"), function(){
-         Saveable.getObject("FancyFolder", nearestIt).onLongClick();
+         Saveable.getObject("ReleaseToLaunchFolder", nearestIt).onLongClick();
          })
          },1000)*/
       }
@@ -115,7 +123,21 @@ return (function(){
   FancyFolder.prototype.open = function(){
     //this.subFolders = [];
     this.makePersistent();
-    var parent = this.getParent();
+    var parent = this.getParent()
+      , root = this.root;
+
+    //TODO: setEventHandlerRestorably
+    /*root
+      .getProperties()
+      .edit()
+      .setEventHandler('i.touch', EventHandler.RUN_SCRIPT, getScriptByName('Test').getId())
+      .commit();*/
+
+    /*setTimeout(function(){
+      //TODO: get correct parameters from android classes
+      var rootCenter = getCenter(root);
+      c.getView().dispatchTouchEvent(MotionEvent.obtain(0, 0, 0, rootCenter.x, rootCenter.y, 0));
+    }, 0);*/
 
     //TODO set container visibility
 
@@ -167,113 +189,26 @@ return (function(){
      })*/
   };
 
-  function handleClick(it){
-    var evHa = it.getProperties().getEventHandler("i.tap");
-    if(evHa.getAction() === EventHandler.UNSET)
-      it.launch();
-    else
-      handleOverriddenEventHandler(evHa);
-  }
-
-  function handleOverriddenEventHandler(evHa, thisScriptFunction){
-    var evHaAction = evHa.getAction()
-      , evHaData = evHa.getData();
-
-    if(evHaAction === EventHandler.RUN_SCRIPT){
-      if(evHaData === scriptId){
-        if(thisScriptFunction) thisScriptFunction();
-      }else{
-        //runScript(evHa.getData()) //TODO
-      }
-    }else{
-      screen.runAction(evHaAction, it, evHaData);
-    }
-  }
-
-  var touchEvent;
-  try{
-    touchEvent = typeof event === 'undefined';
-  }catch(e){
-    touchEvent = false;
-  }
-  if(touchEvent){
-    var dx = thisScript.downX - event.getX()
-      , dy = thisScript.downY - event.getY();
+  if(sourceIsOnTouch()){
+    //TODO
+    // thisScript.originFolder.handleTouchEvent(event);
+    log(event.getActionMasked());
     switch(event.getActionMasked()){
-      case MotionEvent.ACTION_DOWN:
-        thisScript.downX = event.getX();
-        thisScript.downY = event.getY();
-        thisScript.downTime = new Date().getTime();
-        thisScript.t = setTimeout(function(){
-          handleOverriddenEventHandler(item.getProperties().getEventHandler("i.longTap"), function(){
-            //long tap
-            var folder = Saveable.getObject("FancyFolder", item);
-            thisScript.originFolder = folder;
-            folder.onLongClick();
-          });
-        }, 1000);
-        break;
       case MotionEvent.ACTION_CANCEL:
       case MotionEvent.ACTION_UP:
-        if(thisScript.t) clearTimeout(thisScript.t);
-        if(thisScript.originFolder){
-          thisScript.originFolder.onRelease();
-          delete thisScript.originFolder;
-        }else{
-          var dTime = new Date().getTime() - thisScript.downTime
-            , absDx = Math.abs(dx)
-            , absDy = Math.abs(dy)
-            , d = Math.sqrt(dx * dx + dy * dy);
-          if(dTime < 1000 && d < scrollThreshold){
-            log("click");
-            handleClick(item);
-          }else if(absDx > 3 * scrollThreshold || absDy > 3 * scrollThreshold){
-            if(absDx > 2 * absDy){
-              if(dx > 0){
-                log("swipeLeft");
-                handleOverriddenEventHandler(item.getProperties().getEventHandler("i.swipeLeft"));
-              }else{
-                log("swipeRight");
-                handleOverriddenEventHandler(item.getProperties().getEventHandler("i.swipeRight"));
-              }
-            }else if(absDy > 2 * absDx){
-              if(dy > 0){
-                log("swipeUp");
-                handleOverriddenEventHandler(evHa);
-              }else{
-                log("swipeDown");
-                handleOverriddenEventHandler(evHa);
-              }
-            }
-          }
-        }
-        delete thisScript.downTime;
-        delete thisScript.downX;
-        delete thisScript.downY;
-        clearTimeout(thisScript.t);
-        delete thisScript.t;
-        break;
-      case MotionEvent.ACTION_MOVE:
-        if(thisScript.originFolder){
-          thisScript.originFolder.onMove(event);
-        }else{
-          if(Math.sqrt(dx * dx + dy * dy) > scrollThreshold){
-            clearTimeout(thisScript.t);
-          }
-        }
-        break;
-      default:
-        break;
+
     }
   }else{
-    // item menu
-    // noinspection JSCheckFunctionSignatures
-    var folder = new FancyFolder(getEvent().getItem());
-    folder.save();
+    switch(getEvent().getSource()){
+      case 'I_LONG_CLICK':
+        var item = getEvent().getItem();
+        var folder = Saveable.getObject("FancyFolder", item);
+        thisScript.originFolder = folder;
+        folder.toggleOpen();
+        break;
+      case 'ITEM_MENU':
+        (new FancyFolder(getEvent().getItem())).save();
+        break;
+    }
   }
 })();
-
-function cleanEval(text){
-  eval('function execute() {' + text + '}');
-  execute();
-}
